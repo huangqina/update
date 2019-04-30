@@ -1,0 +1,8 @@
+#!/bin/bash
+
+export CPLUS_INCLUDE_PATH=CPLUS_INCLUDE_PATH:/usr/include/tcl
+g++ start.cpp -o start -lexpect -ltcl
+g++ retroversion.cpp -o retroversion -lexpect -ltcl  
+g++ update.cpp -o update -lexpect -ltcl  
+
+
