@@ -17,11 +17,14 @@
 
 using namespace std;
 
+//ssh-keygen -f "/root/.ssh/known_hosts" -R 192.168.3.131
+
+string loc_name ="huangzhihao"; 
 string loc_ip ="192.168.3.131"; //the ip of LB
 char pass_pc[]="123456\n"; //the password of LB
 char pass_ai[]="123456\n"; //the password of server
 char pass_disk[]="123123\n"; //the password of encrypted disk on server
-char pass_loc_disk[]="123123\n"; //the password of encrypted disk on USB disk
+char pass_loc_disk[]="123456\n"; //the password of encrypted disk on USB disk
 
 int daemon_init() 
 {
@@ -109,7 +112,9 @@ int rm(vector<string> filename) //remove the file after copy
 {
 	printf("-----------------------start rm----------------------------\n");
 	string name;
-	name+="su yc-pc -c 'cd ~/;sudo -S rm -f ";
+	name += "su ";
+	name += loc_name;
+	name += " -c 'cd ~/;sudo -S rm -f ";
 	for (int i = 0; i<filename.size();i++){
 	
         name+=filename[i];
@@ -155,11 +160,11 @@ int rm(vector<string> filename) //remove the file after copy
                     break;
 				case 4:
                     write(fd,pass_pc,sizeof(pass_pc)-1);
-                    write(fd,"yes\n",4);
+                    //write(fd,"yes\n",4);
                     break;
 				case 5:
                     write(fd,pass_pc,sizeof(pass_pc)-1);
-                    write(fd,"yes\n",4);
+                    //write(fd,"yes\n",4);
                     break;
                 case EXP_EOF:
                     cout <<"EOF\n";
@@ -182,13 +187,15 @@ int copy(vector<string> filename) //copy the file to ~/
 {
 	printf("-----------------------start copy----------------------------\n");
 	string name;
-	name+="su yc-pc -c 'sudo -S cp /mnt/";
+	name += "su ";
+	name += loc_name;
+	name += " -c 'sudo -S cp -rf /mnt/";
 	for (int i = 0; i<filename.size();i++){
 	
         name+=filename[i];
         name+=" ";
 	}
-	name +="~/;sudo  -S chmod 777 ";
+	name +="~/;sudo  -S chmod 777 ~/";
 	//name +="filename test_db.py test_wd.py ~/;cd ~/;sudo chmod 777 ";
 	for (int i = 0; i<filename.size();i++){
         name+=filename[i];
@@ -236,11 +243,11 @@ int copy(vector<string> filename) //copy the file to ~/
                     break;
 				case 4:
                     write(fd,pass_pc,sizeof(pass_pc)-1);
-                    write(fd,"yes\n",4);
+                    //write(fd,"yes\n",4);
                     break;
 				case 5:
                     write(fd,pass_pc,sizeof(pass_pc)-1);
-                    write(fd,"yes\n",4);
+                   // write(fd,"yes\n",4);
                     break;
                 case EXP_EOF:
                     cout <<"EOF\n";
@@ -259,6 +266,76 @@ int copy(vector<string> filename) //copy the file to ~/
     } 
 	Tcl_DeleteInterp(tcl);
 }
+int ssh_restart() 
+{
+	printf("-----------------------restart ssh----------------------------\n");
+	extern int exp_timeout;
+	exp_timeout = 9999;
+    Tcl_Interp *tcl;
+	tcl = Tcl_CreateInterp();
+	if (Expect_Init(tcl) != TCL_OK)
+	{
+		puts("failure");
+		return 1;
+	}
+	int fd;
+	string code = "";
+	code += "sudo ssh-keygen -f '/root/.ssh/known_hosts'  -R ";
+	code += loc_ip;
+	fd = exp_spawnl("bash","bash","-c",code.c_str(), (char *)0);
+	if(fd < 0)
+	{
+		cout<<"Fail to ssh"<<endl;
+		return -1;
+	}
+	int loop = 1;
+	int result;
+	while(loop)
+	{
+		//predefine some expected responses
+		result = exp_expectl(fd, exp_glob, "*password*", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase*", 5,exp_glob, "*elect*: ", 6, exp_glob,"*Password*", 7,exp_end);
+		//char pas[] = "123456\n";
+		switch(result)
+		{
+			case 1:
+				write(fd, pass_pc, sizeof(pass_pc) - 1);
+				break;
+			case 2:
+				cout <<"wrong password"<<endl;
+				break;
+			case 3:
+				cout<<"connect security"<<endl;
+				write(fd, "yes\n", 4);
+				break;
+			case 4:
+				write(fd, pass_pc, sizeof(pass_pc) - 1);
+				break;
+			case 5:
+				write(fd, pass_loc_disk, sizeof(pass_loc_disk) - 1);
+				break;
+			case 6:
+				write(fd, "\r\n", 2);
+				break;
+			case 7:
+				write(fd, pass_pc, sizeof(pass_pc) - 1);
+				break;
+			case EXP_EOF:
+				cout << "EOF\n";
+				loop = 0;
+				break;
+			case EXP_TIMEOUT:
+				cout<<"Time out\n";
+				loop = 0;
+				break;
+			default:
+				cout<<"logged in "<<result<<endl;
+				loop = 0;
+				break;
+		}
+	}
+    Tcl_DeleteInterp(tcl);
+}
+
 int mount_copy(string ip, vector<string> filename) //mount the encrypted disk on server and copy file to it
 {
 	printf("-----------------------start mount_copy----------------------------\n");
@@ -275,9 +352,12 @@ int mount_copy(string ip, vector<string> filename) //mount the encrypted disk on
 		mv +="_copy";
 		mv +=";";
 	}
-	name+=" sudo rsync --progress yc-pc@";
+	
+	name+=" sudo rsync --progress ";
+	name+=loc_name;
+	name+= "@";
 	name+=loc_ip;
-	name+=":~/";
+	name+=":/mnt/";
 	name+="\{";
 	for (int i = 0; i<filename.size();i++){
 	
@@ -313,7 +393,7 @@ int mount_copy(string ip, vector<string> filename) //mount the encrypted disk on
 	while(loop)
 	{
 		//predefine some expected responses
-		result = exp_expectl(fd, exp_glob, "*assword: ", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase*", 5,exp_glob, "*elect*: ", 6, exp_end);
+		result = exp_expectl(fd, exp_glob, "*assword: ", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase*", 5,exp_glob, "*elect*: ", 6,exp_glob,"WARNING",7, exp_end);
 		//char pas[] = "123456\n";
 		switch(result)
 		{
@@ -336,6 +416,9 @@ int mount_copy(string ip, vector<string> filename) //mount the encrypted disk on
 			case 6:
 				write(fd, "\r\n", 2);
 				break;
+			case 7:
+				ssh_restart();
+				break;
 			case EXP_EOF:
 				cout << "EOF\n";
 				loop = 0;
@@ -356,7 +439,9 @@ int mount_loc(string disk) //mount the USB disk on LB
 {
 	printf("-----------------------start mount_loc----------------------------\n");
 	string  loc="";
-	loc += "su yc-pc -c 'sudo -S cryptsetup   open ";
+	loc += "su ";
+	loc += loc_name;
+	loc += " -c 'sudo -S cryptsetup   open ";
 	loc += disk;
 	loc += " p;sudo mount /dev/mapper/p /mnt'";
 	extern int exp_timeout;
@@ -422,6 +507,8 @@ int mount_loc(string disk) //mount the USB disk on LB
 	}
     Tcl_DeleteInterp(tcl);
 }
+
+
 int umount_loc() //umount the USB disk on LB
 {
 	printf("-----------------------start umount_loc----------------------------\n");
@@ -437,7 +524,11 @@ int umount_loc() //umount the USB disk on LB
 	int fd;
 	int loop = 1;
 	int result;
-	fd = exp_spawnl("bash","bash","-c","su yc-pc -c 'sudo -S umount  /mnt;sudo cryptsetup  close   p'", (char *)0);
+	string  loc="";
+	loc += "su ";
+	loc += loc_name;
+	loc +=  " -c 'sudo -S umount  /mnt;sudo cryptsetup  close   p'";
+	fd = exp_spawnl("bash","bash","-c",loc.c_str(), (char *)0);
 	if(fd < 0)
 	{
 		cout<<"Fail to sh"<<endl;
@@ -650,8 +741,8 @@ int run(string ip,string cmd) //run
 	while(loop)
 	{
 		//predefine some expected responses
-		result = exp_expectl(fd, exp_glob, "*assword*", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase: ", 5,exp_glob, "*elect*: ", 6, exp_end);
-		//char pas[] = "123456\n";
+		result = exp_expectl(fd, exp_glob, "*assword*", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase: ", 5,exp_glob, "*Running*", 6,exp_glob,"*elect*: ", 7, exp_end);
+		//char pas[] = "123456\n";Running on
 		switch(result)
 		{
 			case 1:
@@ -670,7 +761,11 @@ int run(string ip,string cmd) //run
 			case 5:
 				write(fd, pass_disk, sizeof(pass_disk) - 1);
 				break;
-			case 6:
+            case 6:
+				cout<<"start successful\n";
+                return 1;
+				break;
+			case 7:
 				write(fd, "\r\n", 2);
 				break;
 			case EXP_EOF:
@@ -713,20 +808,21 @@ int main()
 				run(ip[0],cmd);
 				return 0;
 			}
+	umount_loc();
 	mount_loc(disk[0]);
-	copy(filename);
+	//copy(filename);
 	try{
-		for (int i = 0; i<sizeof(ip);i++){
+		for (int i = 0; i<ip.size();i++){
    		mount("/dev/sda4",ip[i]);
 		mount_copy(ip[i],filename);
 		umount(ip[i]);
 		for (int i = 0; i<filename.size();i++){
-			if(filename[i] == "DB.zip"){
+			if(filename[i] == "db.zip"){
 				mount("/dev/sda4",ip[i]);
 				string cmd = "";
-				cmd += "mv -f /mnt/DB2.py /mnt/DB2_copy.py;";
-				cmd += "cd /mnt;sudo -S unzip  -o /mnt/DB.zip;cd ~/;";
-				cmd += "cp -f /mnt/DB2.py ~/DB";
+				// cmd += "mv -f /mnt/main.py /mnt/main.py;";
+				cmd += "unzip -oP 123456 /mnt/db.zip -d ~/;cd ~/db;./start";
+				// cmd += "cp -f /mnt/main.py ~/DB";
 				run(ip[i],cmd);
 				umount(ip[i]);	
 				}
@@ -736,12 +832,13 @@ int main()
 				char s[100];
 				int port = 8091;
 				sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-				cmd += "mv -f /mnt/wd /mnt/wd_copy;";
-				cmd += "cd /mnt;sudo -S unzip -o wd.zip;cd ~/;";
-				cmd += "cp -rf /mnt/wd ~/;";
+				// cmd += "mv -f /mnt/wd /mnt/wd_copy;";
+				cmd += "unzip -oP 123456 /mnt/wd.zip -d ~/;cd ~/wd;";
+				// cmd += "cp -rf /mnt/wd ~/;";
 				cmd += s;
-				cmd +=  "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/wd/main.py>/dev/null 2>&1 &;";
-				cmd += "rm -rf ~/wd";
+				cmd +=  "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/wd/main.py";
+				run(ip[i],cmd);
+				cmd = "rm -rf ~/wd";
 				run(ip[i],cmd);
 				umount(ip[i]);	
 			}
@@ -750,14 +847,15 @@ int main()
 				mount("/dev/sda4",ip[i]);
 				string cmd = "";
 				char s[100];
-				int port = 5000;
+				int port = 5003;
 				sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-				cmd += "mv -f /mnt/ai /mnt/ai_copy;";
-				cmd += "cd -f /mnt;sudo -S unzip -o ai.zip;cd ~/;";
-				cmd += "cp -f /mnt/ai ~/;";
+				//cmd += "mv -f /mnt/ai /mnt/ai_copy;";
+				cmd += "unzip -oP 123456 /mnt/ai.zip -d ~/;cd ~/ai;";
+				//cmd += "cp -f /mnt/ai ~/;";
 				cmd += s;
-				cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/ai/combined_ai.py>/dev/null 2>&1 &;";
-				cmd += "rm -rf ~/ai";
+				cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/ai/combined_ai.py";
+				run(ip[i],cmd);
+				cmd = "sudo -S rm -rf ~/ai";
 				run(ip[i],cmd);
 				umount(ip[i]);	
 			}
@@ -767,7 +865,7 @@ int main()
 	}
 	catch(...){
 		rm(filename);
-		for (int i = 0; i<sizeof(ip);i++){
+		for (int i = 0; i<ip.size();i++){
 			umount(ip[i]);	
 			}
 		umount_loc();

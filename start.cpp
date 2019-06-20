@@ -232,7 +232,7 @@ int run(string ip,string cmd) //run test
 	while(loop)
 	{
 		//predefine some expected responses
-		result = exp_expectl(fd, exp_glob, "*assword*", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase: ", 5,exp_glob, "*Debugger is active*", 6,exp_glob,"*elect*: ", 7, exp_end);
+		result = exp_expectl(fd, exp_glob, "*assword*", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase: ", 5,exp_glob, "*Running*", 6,exp_glob,"*elect*: ", 7, exp_end);
 		//char pas[] = "123456\n";Running on
 		switch(result)
 		{
@@ -278,6 +278,10 @@ int run(string ip,string cmd) //run test
 
 int main()
 {   
+	// daemon_init();
+	// close(0);
+	// close(1);
+    // close(2);
 	vector<string> filename = readfile("./filename");
     vector<string> ip = readfile("./ip");
     if(filename[0] == "test"){
@@ -288,12 +292,12 @@ int main()
             return 0;
         }
     try{
-		for (int i = 0; i<sizeof(ip);i++){
+		for (int i = 0; i<ip.size();i++){
             for (int i = 0; i<filename.size();i++){
-                if(filename[i] == "DB.zip"){
+                if(filename[i] == "db.zip"){
                     string cmd = "";
                     mount("/dev/sda4",ip[i]);
-                    cmd += "sudo -S docker-compose -f ~/DB/docker-compose.yaml up";
+                    cmd += "sudo -S docker-compose -f ~/db/docker-compose.yaml up";
                     run(ip[i],cmd);
                     umount(ip[i]);
                 }
@@ -303,10 +307,11 @@ int main()
                     char s[100];
                     int port = 8091;
                     sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-                    cmd += "sudo -S cp -f /mnt/wd ~/wd;";
+                    cmd += "unzip -oP 123456 /mnt/wd.zip -d ~/;";
                     cmd += s;
-                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/wd/main.py>/dev/null 2>&1 &;";
-                    cmd += "rm -rf ~/wd";
+                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/wd/main.py";
+					run(ip[i],cmd);
+                    cmd = "sudo -S rm -rf ~/wd";
                     run(ip[i],cmd);
                     umount(ip[i]);	
                 }
@@ -314,12 +319,14 @@ int main()
                     mount("/dev/sda4",ip[i]);
                     string cmd = "";
                     char s[100];
-                    int port = 5000;
+                    int port = 5003;
                     sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-                    cmd += "sudo -S cp -f /mnt/ai ~/ai;";
+					cmd += "unzip -oP 123456 /mnt/ai.zip -d ~/;";
+                    //cmd += "sudo -S cp -f /mnt/ai ~/ai;";
                     cmd += s;
-                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/ai/combined_ai.py>/dev/null 2>&1 &;";
-                    cmd += "rm -rf ~/ai";
+                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/ai/combined_ai.py";
+					run(ip[i],cmd);
+                    cmd = "sudo -S rm -rf ~/ai";
                     run(ip[i],cmd);
                     umount(ip[i]);
                 }
@@ -327,7 +334,7 @@ int main()
         }
     }
     catch(...){
-		for (int i = 0; i<sizeof(ip);i++){
+		for (int i = 0; i<ip.size();i++){
 			umount(ip[i]);	
 		}
 	}

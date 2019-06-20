@@ -277,15 +277,15 @@ int main()
 	vector<string> filename = readfile("./filename");
     vector<string> ip = readfile("./ip");
     try{
-		for (int i = 0; i<sizeof(ip);i++){
+		for (int i = 0; i<ip.size();i++){
             for (int i = 0; i<filename.size();i++){
                 if(filename[i] == "DB.zip"){
                     string cmd = "";
                     mount("/dev/sda4",ip[i]);
-                    cmd += "sudo -S mv -f /mnt/DB2.py /mnt/DB4.py;";
-                    cmd += "sudo -S mv -f /mnt/DB2_copy.py /mnt/DB2.py;";
-                    cmd += "sudo -S mv -f /mnt/DB4.py /mnt/DB2_copy.py;";
-                    cmd += "sudo -S cp -f /mnt/DB2.py ~/DB";
+                    cmd += "sudo -S mv -rf /mnt/db.zip /mnt/db2;";
+                    cmd += "sudo -S mv -rf /mnt/db.zip_copy /mnt/db.zip;";
+                    cmd += "sudo -S mv -rf /mnt/db2 /mnt/db.zip_copy;";
+                    cmd += "unzip -oP 123456 /mnt/db.zip -d ~/;cd ~/db;./start";
                     run(ip[i],cmd);
                     umount(ip[i]);
                 }
@@ -295,13 +295,14 @@ int main()
                     char s[100];
                     int port = 8091;
                     sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-                    cmd += "sudo -S mv -f /mnt/wd /mnt/wd2;";
-                    cmd += "sudo -S mv -f /mnt/wd_copy /mnt/wd;";
-                    cmd += "sudo -S mv -f /mnt/wd2 /mnt/wd_copy;";
-                    cmd += "sudo -S cp -f /mnt/wd ~/wd;";
+                    cmd += "sudo -S mv -f /mnt/wd.zip /mnt/wd2;";
+                    cmd += "sudo -S mv -f /mnt/wd.zip_copy /mnt/wd.zip;";
+                    cmd += "sudo -S mv -f /mnt/wd2 /mnt/wd.zip_copy;";
+                    cmd += "unzip -oP 123456 /mnt/wd.zip -d ~/;cd ~/wd;";
                     cmd += s;
-                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/wd/main.py>/dev/null 2>&1 &;";
-                    cmd += "rm -rf ~/wd";
+                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/wd/main.py";
+					run(ip[i],cmd);
+                    cmd = "rm -rf ~/wd";
                     run(ip[i],cmd);
                     umount(ip[i]);	
                 }
@@ -309,15 +310,19 @@ int main()
                     mount("/dev/sda4",ip[i]);
                     string cmd = "";
                     char s[100];
-                    int port = 5000;
+                    int port = 5003;
                     sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-                    cmd += "sudo -S mv -f /mnt/ai /mnt/ai2;";
-                    cmd += "sudo -S mv -f mnt/ai_copy /mnt/wd;";
-                    cmd += "sudo -S mv -f /mnt/ai2 /mnt/ai_copy;";
-                    cmd += "sudo -S cp -f /mnt/ai ~/ai;";
+                    // cmd += "sudo -S mv -f /mnt/ai /mnt/ai2;";
+                    // cmd += "sudo -S mv -f /mnt/ai_copy /mnt/wd;";
+                    // cmd += "sudo -S mv -f /mnt/ai2 /mnt/ai_copy;";
+					cmd += "sudo -S mv -f /mnt/ai.zip /mnt/ai2;";
+                    cmd += "sudo -S mv -f /mnt/ai.zip_copy /mnt/ai.zip;";
+                    cmd += "sudo -S mv -f /mnt/ai2 /mnt/ai.zip_copy;";
+                    cmd += "unzip -oP 123456 /mnt/ai.zip -d ~/;cd ~/ai;";
                     cmd += s;
-                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/ai/combined_ai.py>/dev/null 2>&1 &;";
-                    cmd += "rm -rf ~/ai";
+                    cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/ai/combined_ai.py";
+					run(ip[i],cmd);
+                    cmd = "rm -rf ~/ai";
                     run(ip[i],cmd);
                     umount(ip[i]);
                 }
@@ -325,7 +330,7 @@ int main()
         }
     }
     catch(...){
-		for (int i = 0; i<sizeof(ip);i++){
+		for (int i = 0; i<ip.size();i++){
 			umount(ip[i]);	
 		}
 	}

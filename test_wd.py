@@ -22,5 +22,7 @@ for line in open("./ip"):
         response = requests.post(url=wd_url, data=json.dumps(temp_dict), headers={'content-type': 'application/json'}, timeout=20)
         if response.status_code == 200:
             print(line.strip()+' wd OK')
+        else:
+            print(line.strip()+' wd ERROR')
     except BaseException:
         print(line.strip()+' wd ERROR')
