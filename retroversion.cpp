@@ -21,6 +21,7 @@ using namespace std;
 char pass_pc[]="123456\n";
 char pass_ai[]="123456\n"; //the password of server
 char pass_disk[]="123123\n";
+string pass_zip = "123456";
 
 
 int daemon_init() 
@@ -232,8 +233,8 @@ int run(string ip,string cmd) //run test
 	while(loop)
 	{
 		//predefine some expected responses
-		result = exp_expectl(fd, exp_glob, "*assword*", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase: ", 5,exp_glob, "*elect*: ", 6, exp_end);
-		//char pas[] = "123456\n";
+		result = exp_expectl(fd, exp_glob, "*assword*", 1, exp_exact, "Permission denied, please try again.", 2, exp_regexp, "(The authenticity of host)(.)*(Are you sure you want to continue connecting (yes/no)?)", 3, exp_glob, "*sudo*", 4,exp_glob, "*assphrase: ", 5,exp_glob, "*Running*", 6,exp_glob,"*elect*: ", 7, exp_end);
+		//char pas[] = "123456\n";Running on
 		switch(result)
 		{
 			case 1:
@@ -252,7 +253,11 @@ int run(string ip,string cmd) //run test
 			case 5:
 				write(fd, pass_disk, sizeof(pass_disk) - 1);
 				break;
-			case 6:
+            case 6:
+				cout<<"start successful\n";
+                return 1;
+				break;
+			case 7:
 				write(fd, "\r\n", 2);
 				break;
 			case EXP_EOF:
@@ -274,18 +279,24 @@ int run(string ip,string cmd) //run test
 
 int main()
 {   
+	// daemon_init(); //to run the code on the background
+	// close(0);
+	// close(1);
+    // close(2);
 	vector<string> filename = readfile("./filename");
     vector<string> ip = readfile("./ip");
     try{
 		for (int i = 0; i<ip.size();i++){
             for (int i = 0; i<filename.size();i++){
-                if(filename[i] == "DB.zip"){
+                if(filename[i] == "db.zip"){
                     string cmd = "";
                     mount("/dev/sda4",ip[i]);
                     cmd += "sudo -S mv -rf /mnt/db.zip /mnt/db2;";
                     cmd += "sudo -S mv -rf /mnt/db.zip_copy /mnt/db.zip;";
                     cmd += "sudo -S mv -rf /mnt/db2 /mnt/db.zip_copy;";
-                    cmd += "unzip -oP 123456 /mnt/db.zip -d ~/;cd ~/db;./start";
+                    cmd += "unzip -oP ";
+					cmd += pass_zip;
+					cmd += " /mnt/db.zip -d ~/;cd ~/db;./start";
                     run(ip[i],cmd);
                     umount(ip[i]);
                 }
@@ -298,7 +309,9 @@ int main()
                     cmd += "sudo -S mv -f /mnt/wd.zip /mnt/wd2;";
                     cmd += "sudo -S mv -f /mnt/wd.zip_copy /mnt/wd.zip;";
                     cmd += "sudo -S mv -f /mnt/wd2 /mnt/wd.zip_copy;";
-                    cmd += "unzip -oP 123456 /mnt/wd.zip -d ~/;cd ~/wd;";
+                    cmd += "unzip -oP ";
+					cmd += pass_zip;
+					cmd += " /mnt/wd.zip -d ~/;cd ~/wd;";
                     cmd += s;
                     cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/wd/main.py";
 					run(ip[i],cmd);
@@ -318,7 +331,9 @@ int main()
 					cmd += "sudo -S mv -f /mnt/ai.zip /mnt/ai2;";
                     cmd += "sudo -S mv -f /mnt/ai.zip_copy /mnt/ai.zip;";
                     cmd += "sudo -S mv -f /mnt/ai2 /mnt/ai.zip_copy;";
-                    cmd += "unzip -oP 123456 /mnt/ai.zip -d ~/;cd ~/ai;";
+                    cmd += "unzip -oP ";
+					cmd += pass_zip;
+					cmd += " /mnt/ai.zip -d ~/;cd ~/ai;";
                     cmd += s;
                     cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/ai/combined_ai.py";
 					run(ip[i],cmd);

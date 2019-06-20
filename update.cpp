@@ -19,7 +19,8 @@ using namespace std;
 
 //ssh-keygen -f "/root/.ssh/known_hosts" -R 192.168.3.131
 
-string loc_name ="huangzhihao"; 
+string pass_zip ="123456";
+string loc_name ="yc-pc"; //the user on LB
 string loc_ip ="192.168.3.131"; //the ip of LB
 char pass_pc[]="123456\n"; //the password of LB
 char pass_ai[]="123456\n"; //the password of server
@@ -790,10 +791,10 @@ int run(string ip,string cmd) //run
 
 
 int main()
-{	//daemon_init();
+{	//daemon_init(); //to run the code on the background
 	//close(0);
 	//close(1);
-        //close(2);
+    //close(2);
 	vector<string> filename = readfile("./filename");
 	vector<string> ip = readfile("./ip");
 	vector<string> disk = readfile("./disk");
@@ -821,7 +822,9 @@ int main()
 				mount("/dev/sda4",ip[i]);
 				string cmd = "";
 				// cmd += "mv -f /mnt/main.py /mnt/main.py;";
-				cmd += "unzip -oP 123456 /mnt/db.zip -d ~/;cd ~/db;./start";
+				cmd += "unzip -oP ";
+				cmd += pass_zip;
+				cmd += " /mnt/db.zip -d ~/;cd ~/db;./start";
 				// cmd += "cp -f /mnt/main.py ~/DB";
 				run(ip[i],cmd);
 				umount(ip[i]);	
@@ -833,12 +836,14 @@ int main()
 				int port = 8091;
 				sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
 				// cmd += "mv -f /mnt/wd /mnt/wd_copy;";
-				cmd += "unzip -oP 123456 /mnt/wd.zip -d ~/;cd ~/wd;";
+				cmd += "unzip -oP ";
+				cmd += pass_zip;
+				cmd += " /mnt/wd.zip -d ~/;cd ~/wd;";
 				// cmd += "cp -rf /mnt/wd ~/;";
 				cmd += s;
 				cmd +=  "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/wd/main.py";
 				run(ip[i],cmd);
-				cmd = "rm -rf ~/wd";
+				cmd = "sudo -S rm -rf ~/wd";
 				run(ip[i],cmd);
 				umount(ip[i]);	
 			}
@@ -850,7 +855,9 @@ int main()
 				int port = 5003;
 				sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
 				//cmd += "mv -f /mnt/ai /mnt/ai_copy;";
-				cmd += "unzip -oP 123456 /mnt/ai.zip -d ~/;cd ~/ai;";
+				cmd += "unzip -oP ";
+				cmd += pass_zip;
+				cmd += " /mnt/ai.zip -d ~/;cd ~/ai;";
 				//cmd += "cp -f /mnt/ai ~/;";
 				cmd += s;
 				cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/ai/combined_ai.py";

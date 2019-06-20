@@ -21,7 +21,7 @@ using namespace std;
 char pass_pc[]="123456\n";
 char pass_ai[]="123456\n"; //the password of server
 char pass_disk[]="123123\n";
-
+string pass_zip = "123456";
 
 int daemon_init() 
 {
@@ -278,7 +278,7 @@ int run(string ip,string cmd) //run test
 
 int main()
 {   
-	// daemon_init();
+	// daemon_init(); //to run the code on the background
 	// close(0);
 	// close(1);
     // close(2);
@@ -307,7 +307,9 @@ int main()
                     char s[100];
                     int port = 8091;
                     sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-                    cmd += "unzip -oP 123456 /mnt/wd.zip -d ~/;";
+                    cmd += "unzip -oP ";
+					cmd += pass_zip;
+					cmd += " /mnt/wd.zip -d ~/;cd ~/wd;";
                     cmd += s;
                     cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos; python ~/wd/main.py";
 					run(ip[i],cmd);
@@ -321,7 +323,9 @@ int main()
                     char s[100];
                     int port = 5003;
                     sprintf(s, "sudo -S lsof -i:%d | awk 'NR == 1 {next}{print $2}'|xargs kill -9;", port);
-					cmd += "unzip -oP 123456 /mnt/ai.zip -d ~/;";
+					cmd += "unzip -oP ";
+					cmd += pass_zip;
+					cmd += " /mnt/ai.zip -d ~/;cd ~/ai;";
                     //cmd += "sudo -S cp -f /mnt/ai ~/ai;";
                     cmd += s;
                     cmd += "export PATH='~/anaconda3/bin:$PATH';source activate pos;python ~/ai/combined_ai.py";

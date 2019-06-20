@@ -2,7 +2,7 @@ sudo apt-get install tcl-dev
 sudo apt-get install expect
 sudo apt-get install tcl-expect-dev
 export CPLUS_INCLUDE_PATH=CPLUS_INCLUDE_PATH:/usr/include/tcl
-g++ ex.cpp -o ex -lexpect -ltcl && ./ex
+g++ start.cpp -o start -lexpect -ltcl && ./start
 lsof -i:5002 | awk 'NR == 1 {next}{print $2}'|xargs kill -9
 
 
